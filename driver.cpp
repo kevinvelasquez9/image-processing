@@ -3,6 +3,7 @@
 #include <vector>
 #include <sys/types.h>
 #include <dirent.h>
+#include <dlfcn.h>
 #include "plugin.h"
 
 using std::cout;
@@ -38,7 +39,8 @@ vector<Plugin> fetch_plugins(vector<string> plugin_files) {
     vector<Plugin> plugins;
     // Iterate over the plugin files
     for (vector<string>::iterator it = plugin_files.begin(); it != plugin_files.end(); it++) {
-        
+        Plugin plugin;
+        plugin.handle = dlopen((*it).c_str(), RTLD_LAZY);
     }
     return plugins;
 }
