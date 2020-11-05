@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-struct Image {
+typedef struct Image {
 	// Image width and height
 	unsigned width, height;
 
@@ -21,7 +21,7 @@ struct Image {
 	//   Bits 16-23 are the blue color component value
 	//   Bits 24-31 are the alpha channel value (0=completely transparent, 255=completely opaque)
 	uint32_t *data;
-};
+} Image;
 
 //
 // Create an Image of specified dimensions.
