@@ -43,7 +43,7 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
         uint32_t curRow = i * source->width;
         uint32_t endRow = ((i + 1) * source->width) - 1;
         for (unsigned j = 0; j < source->width/2; j++) {
-            out[curRow + j] = source[endRow- j];
+            out->data[curRow + j] = source->data[endRow- j];
         }
 	}
 
