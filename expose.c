@@ -69,7 +69,7 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
         return NULL;
     }
 
-    for (int i = 0; i < source->height * source->width; i++) {
+    for (unsigned int i = 0; i < source->height * source->width; i++) {
         out->data[i] = expose_pixel(source->data[i], args->expose);
     }
 	

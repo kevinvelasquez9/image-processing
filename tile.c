@@ -63,8 +63,8 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
         }
     }
 
-    for (int i = 0; i < source->height; i++) {
-        for (int j = 0; j  < source->width; j++) {
+    for (unsigned int i = 0; i < source->height; i++) {
+        for (unsigned int j = 0; j  < source->width; j++) {
             out->data[i * source->width + j] = intermediate->data[(i % tileHeight) * tileWidth + (j % tileWidth)];
         }
     }

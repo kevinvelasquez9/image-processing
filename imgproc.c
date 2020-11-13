@@ -59,7 +59,16 @@ void fetch_plugins(Plugin** plugins, char** plugin_files, int num_elements) {
     }
 }
 
-int main() {
+int handle_input(int argc, char* argv[], Plugin** plugins) {
+    if (argc == 1) {
+        printf("Usage: imgproc <command> [<command args...>]\n");
+        printf("Commands are:\nlist\nexec <plugin> <input img> <output img> [<plugin args...>]\n");
+    }
+
+    return 0;
+}
+
+int main(int argc, char* argv[]) {
     char* plugin_dir = fetch_dir();
     int num_elements = 10;
 
@@ -74,6 +83,7 @@ int main() {
     }
     fetch_plugins(plugins, plugin_files, num_elements);
 
+    int error_code = handle_input(argc, argv, plugins);
 
     return 0;
 }
