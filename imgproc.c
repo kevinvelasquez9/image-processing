@@ -32,6 +32,7 @@ void fetch_files(char** plugin_files, char* plugin_dir, int num_elements) {
                 plugin_files = realloc(plugin_files, 2*num_elements);
                 num_elements *= 2;
             }
+            plugin_files[index] = (char*) malloc(sizeof(char*));
             plugin_files[index++] = file;
         }
     }
@@ -45,20 +46,26 @@ void fetch_files(char** plugin_files, char* plugin_dir, int num_elements) {
 void fetch_plugins(Plugin** plugins, char** plugin_files, int num_elements) {
     int index = 0;
     // Iterate over the plugin files
-    while (plugin_files[index] != NULL) {
+    while ((plugin_files)[index] != NULL) {
         // Realloc if we need to
         if (index == num_elements) {
             plugins = realloc(plugins, 2*num_elements);
             num_elements *= 2;
         }
         char* handle = dlopen(plugin_files[index], RTLD_LAZY);
+<<<<<<< HEAD
         assert(plugins[index] != NULL);
         plugins[index]->handle = handle;
+=======
+        (plugins)[index]->handle = handle;
+>>>>>>> 42cf6353437225078b72b8ac95ce5492d624e8b3
         // idk if dlsym() works here
-        plugins[index]->get_plugin_name = (const char * (*)(void)) dlsym(handle, "get_plugin_name");
-        plugins[index]->get_plugin_desc = (const char * (*)(void)) dlsym(handle, "get_plugin_desc");
-        plugins[index]->parse_arguments = dlsym(handle, "parse_arguments");
-        plugins[index]->transform_image = (Image* (*)(Image*, void*)) dlsym(handle, "transform_image");
+        *(void **) (&(plugins[index])->get_plugin_name) = dlsym(handle, "get_plugin_name");
+        *(void **) (&(plugins[index])->get_plugin_desc) = dlsym(handle, "get_plugin_desc");
+        *(void **) (&(plugins[index])->parse_arguments) = dlsym(handle, "parse_arguments");
+        *(void **) (&(plugins[index])->transform_image) = dlsym(handle, "transform_image");
+        //plugins[index]->parse_arguments = dlsym(handle, "parse_arguments");
+        //plugins[index]->transform_image = (Image* (*)(Image*, void*)) dlsym(handle, "transform_image");
         index++;
     }
 }
@@ -67,10 +74,13 @@ int main() {
     char* plugin_dir = fetch_dir();
     int num_elements = 10;
 
-    char** plugin_files = malloc(num_elements * sizeof(char*));
+    // We make the array of plugin file names
+    char** plugin_files = (char**) malloc(num_elements * sizeof(char*));
     fetch_files(plugin_files, plugin_dir, num_elements);
 
+    // We make the array of plugins
     Plugin** plugins = malloc(num_elements * sizeof(Plugin*));
+<<<<<<< HEAD
     for (int i = 0; i < 5; i++) {
         plugins[i] = (Plugin*)malloc(sizeof(Plugin));
     }
@@ -82,5 +92,13 @@ int main() {
     free(plugins);
     free(plugin_files);
     
+=======
+    for (int i = 0; i < num_elements; i++) {
+        plugins[i] = malloc(sizeof(Plugin));
+    }
+    fetch_plugins(plugins, plugin_files, num_elements);
+
+
+>>>>>>> 42cf6353437225078b72b8ac95ce5492d624e8b3
     return 0;
 }
