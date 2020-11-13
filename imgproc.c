@@ -12,7 +12,7 @@ char* fetch_dir() {
     return (dir != NULL) ? dir : "./plugins";
 }
 
-void fetch_files(char** plugin_files, char* plugin_dir, int num_elements) {
+void fetch_files(char** plugin_files, char* plugin_dir) {
     DIR* dir;
     struct dirent* dirp;
     // Return if we cannot read from directory
@@ -26,26 +26,16 @@ void fetch_files(char** plugin_files, char* plugin_dir, int num_elements) {
     while ((dirp = readdir(dir)) != NULL) {
         char* file = dirp->d_name;
         if (strstr(file, ".so") != NULL) {
-            // Realloc if we need to
-            if (index == num_elements) {
-                plugin_files = realloc(plugin_files, 2*num_elements);
-                num_elements *= 2;
-            }
             plugin_files[index] = (char*) malloc(sizeof(char*));
             plugin_files[index++] = file;
         }
     }
 }
 
-void fetch_plugins(Plugin** plugins, char** plugin_files, int num_elements) {
+void fetch_plugins(Plugin** plugins, char** plugin_files) {
     int index = 0;
     // Iterate over the plugin files
-    while ((plugin_files)[index] != NULL) {
-        // Realloc if we need to
-        if (index == num_elements) {
-            plugins = realloc(plugins, 2*num_elements);
-            num_elements *= 2;
-        }
+    while (plugin_files[index] != NULL) {
         char* handle = dlopen(plugin_files[index], RTLD_LAZY);
         (plugins)[index]->handle = handle;
         // idk if dlsym() works here
@@ -56,6 +46,9 @@ void fetch_plugins(Plugin** plugins, char** plugin_files, int num_elements) {
         //plugins[index]->parse_arguments = dlsym(handle, "parse_arguments");
         //plugins[index]->transform_image = (Image* (*)(Image*, void*)) dlsym(handle, "transform_image");
         index++;
+        if (index == 5) {
+            break;
+        }
     }
 }
 
@@ -63,6 +56,14 @@ int handle_input(int argc, char* argv[], Plugin** plugins) {
     if (argc == 1) {
         printf("Usage: imgproc <command> [<command args...>]\n");
         printf("Commands are:\nlist\nexec <plugin> <input img> <output img> [<plugin args...>]\n");
+    } else if (strcmp("list", argv[1]) == 0) {
+        int num_plugins = 0;
+        for (int i = 0; i < 5; i++) {
+            if (plugins[i] != NULL) {
+                num_plugins++;
+            }
+        }
+        printf("%d\n", num_plugins);
     }
 
     return 0;
@@ -70,18 +71,18 @@ int handle_input(int argc, char* argv[], Plugin** plugins) {
 
 int main(int argc, char* argv[]) {
     char* plugin_dir = fetch_dir();
-    int num_elements = 10;
+    int num_elements = 5;
 
     // We make the array of plugin file names
-    char** plugin_files = (char**) malloc(num_elements * sizeof(char*));
-    fetch_files(plugin_files, plugin_dir, num_elements);
+    char** plugin_files = (char**) calloc(num_elements, sizeof(char*));
+    fetch_files(plugin_files, plugin_dir);
 
     // We make the array of plugins
-    Plugin** plugins = malloc(num_elements * sizeof(Plugin*));
+    Plugin** plugins = calloc(num_elements, sizeof(Plugin*));
     for (int i = 0; i < num_elements; i++) {
-        plugins[i] = malloc(sizeof(Plugin));
+        plugins[i] = calloc(1, sizeof(Plugin));
     }
-    fetch_plugins(plugins, plugin_files, num_elements);
+    fetch_plugins(plugins, plugin_files);
 
     int error_code = handle_input(argc, argv, plugins);
 
