@@ -22,7 +22,6 @@ const char *get_plugin_desc(void) {
 
 void *parse_arguments(int num_args, char *args[]) {
 	(void) args; // this is just to avoid a warning about an unused parameter
-
 	if (num_args != 0) {
 		return NULL;
 	}
