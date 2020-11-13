@@ -34,18 +34,23 @@ void *parse_arguments(int num_args, char *args[]) {
 static uint32_t expose_pixel(uint32_t pix, float expose) {
 	uint8_t r, g, b, a;
 	img_unpack_pixel(pix, &r, &g, &b, &a);
-    r = uint8_t(r* expose);
-    if (r > 255) {
-        r = 255;
+    float rf = (float)r * expose;
+    if (rf > 255.0f) {
+        rf = 255.0f;
     }
-    g = uint8_t(g* expose);
-    if (g > 255) {
-        g = 255;
+    r = (uint8_t)rf;
+
+    float gf = (float)g * expose;
+    if (gf > 255.0f) {
+        gf = 255.0f;
     }
-    b = uint8_t(b* expose);
-    if (b > 255) {
-        b = 255;
+    g = (uint8_t)gf;
+    
+    float bf = (float)b * expose;
+    if (bf > 255.0f) {
+        bf = 255.0f;
     }
+    b = (uint8_t)bf;
 	return img_pack_pixel(r, b, g, a);
 }
 

@@ -18,7 +18,7 @@ const char *get_plugin_name(void) {
 }
 
 const char *get_plugin_desc(void) {
-	return "tile source image in an N*N arrangement"
+	return "tile source image in an N*N arrangement";
 }
 
 void *parse_arguments(int num_args, char *args[]) {
@@ -31,16 +31,6 @@ void *parse_arguments(int num_args, char *args[]) {
     return (void*)a;
 }
 
-// Helper function to swap the blue and green color component values.
-void create_tile(int j, int i, int tw, int th, struct Image *source, struct Image *out) {
-	for (j; j < th; j++) {
-        for (i; i < tw; i++) {
-            int y = j * args->tiles;
-            int x = i * args->tiles;
-            out->data[j * tileWidth + i] = source->data[y * source->width + x];
-        }
-    }
-}
 
 struct Image *transform_image(struct Image *source, void *arg_data) {
 	struct Arguments *args = arg_data;
@@ -64,7 +54,7 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
     if (excessHeight != 0) {
         tileHeight++;
     }
-    struct Image *intermediate = img_create(tileWidth * tileHeight);
+    struct Image *intermediate = img_create(tileWidth, tileHeight);
 
     for (int i = 0; i < tileHeight; i++) {
         for (int j = 0; j < tileWidth; j++) {
@@ -80,7 +70,7 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
     }
     
 
-
+    img_destroy(intermediate);
 	free(args);
 
 	return out;
