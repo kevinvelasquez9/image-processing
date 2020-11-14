@@ -35,7 +35,6 @@ void *parse_arguments(int num_args, char *args[]) {
 static uint32_t expose_pixel(uint32_t pix, float expose) {
 	uint8_t r, g, b, a;
 	img_unpack_pixel(pix, &r, &g, &b, &a);
-    printf("%d\n %d\n %d\n", r, g, b);
     uint32_t rx = r;
     uint32_t bx = b;
     uint32_t gx = g;
@@ -54,9 +53,8 @@ static uint32_t expose_pixel(uint32_t pix, float expose) {
     r = rx;
     b = bx;
     g = gx;
-    printf("%d\n %d\n %d\n", r, g, b);
     
-	return img_pack_pixel(r, b, g, a);
+	return img_pack_pixel(r, g, b, a);
 }
 
 struct Image *transform_image(struct Image *source, void *arg_data) {
