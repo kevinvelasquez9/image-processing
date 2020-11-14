@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
         img_destroy(i);
         img_destroy(result);
         free(plugin);
-        dlclose(command);
+        dlclose(handle);
 
     } else if (strcmp("list", argv[1]) == 0) {
         char** plugin_files = (char**) calloc(num_elements, sizeof(char*));
