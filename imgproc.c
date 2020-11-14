@@ -7,6 +7,7 @@
 #include "plugin.h"
 #include "image.h"
 #include <unistd.h>
+#include <assert.h>
 
 char* fetch_dir() {
     char* dir = getenv("PLUGIN_DIR");
@@ -33,7 +34,7 @@ void fetch_files(char** plugin_files, char* plugin_dir) {
     }
 }
 
-void fetch_plugins(Plugin** plugins, char** plugin_files) {
+void fetch_plugins(Plugin** plugins, char** plugin_files, int *i) {
     int index = 0;
     // Iterate over the plugin files
     while (plugin_files[index] != NULL) {
@@ -58,6 +59,9 @@ void fetch_plugins(Plugin** plugins, char** plugin_files) {
         printf(plugins[index]->get_plugin_desc);
         printf("\n");
     }
+
+    *i = index;
+    
 }
 
 void fetch_plugin(Plugin *plugin, char* handle) {
@@ -69,7 +73,7 @@ void fetch_plugin(Plugin *plugin, char* handle) {
 
     *(void **) (&(plugin)->parse_arguments) = dlsym(handle, "parse_arguments");
 
-        *(void **) (&(plugin)->transform_image) = dlsym(handle, "transform_image");
+    *(void **) (&(plugin)->transform_image) = dlsym(handle, "transform_image");
 
 }
 
@@ -99,6 +103,7 @@ int main(int argc, char* argv[]) {
     if (argc == 1) {
         printf("Usage: imgproc <command> [<command args...>]\n");
         printf("Commands are:\nlist\nexec <plugin> <input img> <output img> [<plugin args...>]\n");
+        return 0;
     }
 
     char* plugin_dir = fetch_dir();
@@ -108,11 +113,10 @@ int main(int argc, char* argv[]) {
     char command[100];
     char *handle;
     int numArgs = 0;
-
-    Plugin *plugin = (Plugin*)malloc(sizeof(Plugin));
     
-    if (strcmp("exec", argv[2])) {
+    if (strcmp("exec", argv[1]) == 0) {
         assert(argc >=5);
+        Plugin *plugin = (Plugin*)malloc(sizeof(Plugin));
         strcpy(command, plugin_dir);
         strcat(command, "/");
         if (strcmp("mirrorh", argv[2]) == 0) {
@@ -144,9 +148,11 @@ int main(int argc, char* argv[]) {
         img_write_png(result, argv[4]);
         img_destroy(i);
         img_destroy(result);
-        free(arg_memory);
+        free(plugin);
+        dlclose(command);
 
-    } else if (strcmp("list", argv[2])) {
+    } else if (strcmp("list", argv[1]) == 0) {
+        printf("list called\n");
         char** plugin_files = (char**) calloc(num_elements, sizeof(char*));
         fetch_files(plugin_files, plugin_dir);
         // We make the array of plugins
@@ -154,24 +160,17 @@ int main(int argc, char* argv[]) {
         for (int i = 0; i < num_elements; i++) {
             plugins[i] = calloc(1, sizeof(Plugin));
         }
-        fetch_plugins(plugins, plugin_files);
+        int index; 
+        fetch_plugins(plugins, plugin_files, &index);
+        for (int i = 0; i < index; i++)  {
+            free(plugin_files[i]);
+        }
+        free(plugin_files);
+        for (int i = 0; i < num_elements; i++) {
+            dlclose((plugins)[index]->handle);
+            free(plugins[i]);
+        }
+        free(plugins);
     }
-
-    // We make the array of plugin file names
-    /* char** plugin_files = (char**) calloc(num_elements, sizeof(char*));
-    fetch_files(plugin_files, plugin_dir);
-    
-
-    // We make the array of plugins
-    Plugin** plugins = calloc(num_elements, sizeof(Plugin*));
-    for (int i = 0; i < num_elements; i++) {
-        plugins[i] = calloc(1, sizeof(Plugin));
-    }
-    fetch_plugins(plugins, plugin_files); */
-
-    /* int error_code = handle_input(argc, argv, plugins); */
-
-    free(plugin);
-
     return 0;
 }
