@@ -124,7 +124,7 @@ int main(int argc, char* argv[]) {
         if (strcmp("mirrorh", argv[2]) == 0) {
             strcat(command, "mirrorh.so");
         } else if (strcmp("mirrorv", argv[2]) == 0) {
-            strcat(command, "mirrov.so");
+            strcat(command, "mirrorv.so");
         } else if (strcmp("swapbg", argv[2]) == 0) {
             strcat(command, "swapbg.so");
         } else if (strcmp("tile", argv[2]) == 0) {
