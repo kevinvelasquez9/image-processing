@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include "image_plugin.h"
 #include <string.h>
+#include <stdio.h>
 
 struct Arguments {
 	// This plugin doesn't accept any command line arguments;
@@ -34,16 +35,27 @@ void *parse_arguments(int num_args, char *args[]) {
 static uint32_t expose_pixel(uint32_t pix, float expose) {
 	uint8_t r, g, b, a;
 	img_unpack_pixel(pix, &r, &g, &b, &a);
-    if (r * expose > 255) {
-        r = 255;
+    printf("%d\n %d\n %d\n", r, g, b);
+    uint32_t rx = r;
+    uint32_t bx = b;
+    uint32_t gx = g;
+    rx *= expose;
+    bx *= expose;
+    gx *= expose;
+    if (rx > 255) {
+        rx = 255;
     }
-    if (g * expose > 255) {
-        g = 255;
-    }    
-    if (b * expose > 255) {
-        b = 255;
+    if (gx > 255) {
+        gx = 255;
     }
-
+    if (bx > 255) {
+        bx = 255;
+    }
+    r = rx;
+    b = bx;
+    g = gx;
+    printf("%d\n %d\n %d\n", r, g, b);
+    
 	return img_pack_pixel(r, b, g, a);
 }
 
