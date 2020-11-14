@@ -26,7 +26,7 @@ void *parse_arguments(int num_args, char *args[]) {
 		return NULL;
 	}
     struct Arguments *a = calloc(1, sizeof(struct Arguments));
-    a->expose = atof(args[0]);
+    a->expose = atof(args[5]);
     return (void*)a;
 }
 

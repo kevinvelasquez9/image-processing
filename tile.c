@@ -27,7 +27,7 @@ void *parse_arguments(int num_args, char *args[]) {
 	}
  
 	struct Arguments *a = calloc(1, sizeof(struct Arguments));
-    a->tiles = atoi(args[0]);
+    a->tiles = atoi(args[5]);
     return (void*)a;
 }
 
