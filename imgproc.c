@@ -86,7 +86,7 @@ int main(int argc, char* argv[]) {
 
     char* plugin_dir = fetch_dir();
     if (plugin_dir == NULL) {
-        printf("Plugin directory not found\n");
+        printf("Error: Plugin directory not found\n");
         return -1;
     }
     int num_elements = 5;
@@ -102,37 +102,62 @@ int main(int argc, char* argv[]) {
         strcpy(command, plugin_dir);
         strcat(command, "/");
         if (strcmp("mirrorh", argv[2]) == 0) {
+            if (argc < 5) {
+                printf("Error: Invald number of arguments\n");
+                return -1;
+            }
             strcat(command, "mirrorh.so");
         } else if (strcmp("mirrorv", argv[2]) == 0) {
-            printf("mirrov called");
+            if (argc < 5) {
+                printf("Error: Invald number of arguments\n");
+                return -1;
+            }
             strcat(command, "mirrorv.so");
         } else if (strcmp("swapbg", argv[2]) == 0) {
+            if (argc < 5) {
+                printf("Error: Invald number of arguments\n");
+                return -1;
+            }
             strcat(command, "swapbg.so");
         } else if (strcmp("tile", argv[2]) == 0) {
-            assert(argc == 6);
+            if (argc < 6) {
+                printf("Error: Invald number of arguments\n");
+                return -1;
+            }
             strcat(command, "tile.so");
             numArgs++;
         } else if (strcmp("expose", argv[2]) == 0) {
-            assert(argc == 6);
+            if (argc < 6) {
+                printf("Error: Invald number of arguments\n");
+                return -1;
+            }
             strcat(command, "expose.so");
             numArgs++;
         } else {
-            printf("Invalid or unknown image manipulation\n");
+            printf("Error: Invalid or unknown image manipulation\n");
             return -1;
         }
         handle = dlopen(command, RTLD_LAZY);
         if (handle == NULL) {
-            printf("dlopen() could not create an executable object from the input file\n");
+            printf("Error: dlopen() could not create an executable object from the input file\n");
             return -1;
         }
         fetch_plugin(plugin, handle);
         if (access(argv[3], F_OK) == -1) {
-            printf("Input image doesn't exist");
+            printf("Error: Input image doesn't exist\n");
             return -1;
         }
         /* Performs plugin's image manipulations */
         struct Image *i = img_read_png(argv[3]);
+        if (i == NULL) {
+            printf("Error: File read as NULL");
+            return -1;
+        }
         void* arg_memory = plugin->parse_arguments(numArgs, argv);
+        if (arg_memory == NULL) {
+            printf("Error: Incorrect args passed to plugin\n");
+            return -1;
+        }
         struct Image *result = plugin->transform_image(i, arg_memory);
         img_write_png(result, argv[4]);
         /* Deallocates memory/closes files */
@@ -142,7 +167,7 @@ int main(int argc, char* argv[]) {
         dlclose(handle);
         /* Was image created? */
         if (access(argv[4], F_OK) == -1) {
-            printf("Output image unsucessfully created\n");
+            printf("Error: Output image unsucessfully created\n");
             return -1;
         }
 
@@ -152,21 +177,21 @@ int main(int argc, char* argv[]) {
         // Return if we cannot read from directory
         dir = opendir(plugin_dir);
         if (dir == NULL) {
-            printf("Error opening %s", plugin_dir);
+            printf("Error: Error opening %s\n", plugin_dir);
             closedir(dir);
             return -1;
         }
         int numFiles = get_num_files(dir, dirp);
-        printf("Loaded %d plugin(s)\n", numFiles);
+        printf("Error: Loaded %d plugin(s)\n", numFiles);
         int iteratorSuccess = plugin_iterator(dir, dirp, plugin_dir);
         if (iteratorSuccess == -1) {
-            printf("dlopen() could not create an executable object from the input file\n");
+            printf("Error: dlopen() could not create an executable object from the input file\n");
             return iteratorSuccess;
         }
         rewinddir(dir);
         closedir(dir);
     } else {
-        printf("Invalid command\n");
+        printf("Error: Invalid command\n");
         return -1;
     }
     return 0;

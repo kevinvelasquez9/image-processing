@@ -25,10 +25,18 @@ void *parse_arguments(int num_args, char *args[]) {
 	if (num_args != 1) {
 		return NULL;
 	}
- 
+    
+    int input = atoi(args[5]);
+    struct Image *i = img_read_png(args[3]);
+    if (input < 0 || input == 0 || input > i->width || input > i->height) {
+        img_destroy(i);
+        return NULL;
+    }
+    img_destroy(i);
 	struct Arguments *a = calloc(1, sizeof(struct Arguments));
-    a->tiles = atoi(args[5]);
+    a->tiles = input;
     return (void*)a;
+
 }
 
 
