@@ -9,36 +9,15 @@
 #include <unistd.h>
 #include <assert.h>
 
+
+/* Finds directory containing pluging shared libraries */
 char* fetch_dir() {
     char* dir = getenv("PLUGIN_DIR");
     return (dir != NULL) ? dir : "./plugins";
 }
 
-/*void fetch_files(char** plugin_files, char* plugin_dir, uint8_t* index) {
-    DIR* dir;
-    struct dirent* dirp;
-    // Return if we cannot read from directory
-    dir = opendir(plugin_dir);
-    if (dir == NULL) {
-        printf("Error opening %s", plugin_dir);
-        closedir(dir);
-        return;
-    }
-    // Iterate through all files and push back those with ".so"
-    while ( ( dirp = readdir(dir) ) != NULL) {
-        char* file = dirp->d_name;
-        if (strstr(file, ".so") != NULL) {
-            plugin_files[index] = (char*) malloc(strlen(dirp->d_name) + 1);
-            strncpy(plugin_files[index], dirp->d_name, strlen(dir->d_name) );
-            /*plugin_files[index] = (char*) malloc(sizeof(char*));
-            plugin_files[index] = file; 
-            index++;
-        }
-    }
-    rewinddir(dir);
-    closedir(dir);
-} */
 
+/* Returns number of .so files within a given directory */
 int get_num_files(DIR *dir, struct dirent *dirp) {
     int i = 0;
     while ( ( dirp = readdir(dir) ) != NULL) {
@@ -51,42 +30,10 @@ int get_num_files(DIR *dir, struct dirent *dirp) {
     return i;
 }
 
-void fetch_plugins(char* dir, Plugin** plugins, char** plugin_files, int *i) {
-    int index = 0;
-    // Iterate over the plugin files
-    while (plugin_files[index] != NULL) {
-        char f[100];
-        strcpy(f, dir);
-        strcat(f, "/");
-        strcat(f, plugin_files[index]);
-        char* handle = dlopen(f, RTLD_LAZY);
-        (plugins)[index]->handle = handle;
-        // idk if dlsym() works here
-        *(void **) (&(plugins[index])->get_plugin_name) = dlsym(handle, "get_plugin_name");
-        *(void **) (&(plugins[index])->get_plugin_desc) = dlsym(handle, "get_plugin_desc");
-        *(void **) (&(plugins[index])->parse_arguments) = dlsym(handle, "parse_arguments");
-        *(void **) (&(plugins[index])->transform_image) = dlsym(handle, "transform_image");
-        //plugins[index]->parse_arguments = dlsym(handle, "parse_arguments");
-        //plugins[index]->transform_image = (Image* (*)(Image*, void*)) dlsym(handle, "transform_image");
-        index++;
-        if (index == 5) {
-            break;
-        }
-    }
-    printf("Loaded %d plugin(s)\n", index);
-    for (int j = 0; j < index; j++) {
-        printf(plugins[j]->get_plugin_name());
-        printf(": ");
-        printf(plugins[j]->get_plugin_desc());
-        printf("\n");
-        dlclose(plugins[j]->handle);
-    }
 
-    *i = index;
-    
-}
-
+/* Links functions from shared object file to a Plugin struct */
 void fetch_plugin(Plugin *plugin, char* handle) {
+    assert(plugin != NULL);
     plugin->handle = handle;
 
     *(void **) (&(plugin)->get_plugin_name) = dlsym(handle, "get_plugin_name");
@@ -99,10 +46,38 @@ void fetch_plugin(Plugin *plugin, char* handle) {
 
 }
 
+/* Iterates through plugins in a directory and prints their information */
+int plugin_iterator(DIR *dir, struct dirent* dirp, char *plugin_dir) {
+    char *handle;
+    while ( ( dirp = readdir(dir) ) != NULL) {
+        char command[100];  
+        Plugin *p = (Plugin*)malloc(sizeof(Plugin));
+        char* file = dirp->d_name;
+        if (strstr(file, ".so") != NULL) {
+            strcpy(command, plugin_dir);
+            strcat(command, "/");
+            strcat(command, file);
+            handle = dlopen(command, RTLD_LAZY);
+            if (handle == NULL) {
+                return -1;
+            }
+            fetch_plugin(p, handle);
+            printf(p->get_plugin_name());
+            printf(": ");
+            printf(p->get_plugin_desc());
+            printf("\n");
+            dlclose(handle);
+        }
+        free(p);
+    } 
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     if (argc > 6) {
         return -1;
     }
+    /* Display possible command line arguments */
     if (argc == 1) {
         printf("Usage: imgproc <command> [<command args...>]\n");
         printf("Commands are:\nlist\nexec <plugin> <input img> <output img> [<plugin args...>]\n");
@@ -110,16 +85,20 @@ int main(int argc, char* argv[]) {
     }
 
     char* plugin_dir = fetch_dir();
+    if (plugin_dir == NULL) {
+        printf("Plugin directory not found\n");
+        return -1;
+    }
     int num_elements = 5;
-
-    //char command[100];
-    char *handle;
-    int numArgs = 0;
     
+    /* Dynamically link to a single library */
     if (strcmp("exec", argv[1]) == 0) {
+        char *handle;
+        int numArgs = 0;
         char command[100];
         assert(argc >=5);
         Plugin *plugin = (Plugin*)malloc(sizeof(Plugin));
+        /* Concatenates string that leads to .so file */
         strcpy(command, plugin_dir);
         strcat(command, "/");
         if (strcmp("mirrorh", argv[2]) == 0) {
@@ -138,25 +117,36 @@ int main(int argc, char* argv[]) {
             strcat(command, "expose.so");
             numArgs++;
         } else {
+            printf("Invalid or unknown image manipulation\n");
             return -1;
         }
         handle = dlopen(command, RTLD_LAZY);
+        if (handle == NULL) {
+            printf("dlopen() could not create an executable object from the input file\n");
+            return -1;
+        }
         fetch_plugin(plugin, handle);
         if (access(argv[3], F_OK) == -1) {
             printf("Input image doesn't exist");
             return -1;
         }
+        /* Performs plugin's image manipulations */
         struct Image *i = img_read_png(argv[3]);
         void* arg_memory = plugin->parse_arguments(numArgs, argv);
         struct Image *result = plugin->transform_image(i, arg_memory);
         img_write_png(result, argv[4]);
+        /* Deallocates memory/closes files */
         img_destroy(i);
         img_destroy(result);
         free(plugin);
         dlclose(handle);
+        /* Was image created? */
+        if (access(argv[4], F_OK) == -1) {
+            printf("Output image unsucessfully created\n");
+            return -1;
+        }
 
     } else if (strcmp("list", argv[1]) == 0) {
-        uint8_t fileIndex = 0;
         DIR* dir;
         struct dirent* dirp;
         // Return if we cannot read from directory
@@ -168,47 +158,16 @@ int main(int argc, char* argv[]) {
         }
         int numFiles = get_num_files(dir, dirp);
         printf("Loaded %d plugin(s)\n", numFiles);
-        // Iterate through all files and push back those with ".so"
-        while ( ( dirp = readdir(dir) ) != NULL) {
-            char command[100];
-            Plugin *p = (Plugin*)malloc(sizeof(Plugin));
-            char* file = dirp->d_name;
-            if (strstr(file, ".so") != NULL) {
-                strcpy(command, plugin_dir);
-                strcat(command, "/");
-                strcat(command, file);
-                handle = dlopen(command, RTLD_LAZY);
-                fetch_plugin(p, handle);
-                printf(p->get_plugin_name());
-                printf(": ");
-                printf(p->get_plugin_desc());
-                printf("\n");
-                dlclose(handle);
-            }
-            free(p);
+        int iteratorSuccess = plugin_iterator(dir, dirp, plugin_dir);
+        if (iteratorSuccess == -1) {
+            printf("dlopen() could not create an executable object from the input file\n");
+            return iteratorSuccess;
         }
         rewinddir(dir);
         closedir(dir);
-        /* char** plugin_files = (char**) calloc(num_elements, sizeof(char*));
-        fetch_files(plugin_files, plugin_dir, &fileIndex);
-        // We make the array of plugins
-        Plugin** plugins = calloc(num_elements, sizeof(Plugin*));
-        for (int i = 0; i < num_elements; i++) {
-            plugins[i] = calloc(1, sizeof(Plugin));
-        }
-        int index; 
-        fetch_plugins(plugin_dir, plugins, plugin_files, &index);
-        for (int i = 0; i < fileIndex; fileIndex++) {
-            if (plugin_files[fileIndex] != NULL) {
-                free(plugin_files[fileIndex]);
-            }
-        }
-        free(plugin_files);
-        for (int i = 0; i < num_elements; i++) {
-            //dlclose((plugins)[index]->handle);
-            free(plugins[i]);
-        }
-        free(plugins); */
-    } 
+    } else {
+        printf("Invalid command\n");
+        return -1;
+    }
     return 0;
 }
