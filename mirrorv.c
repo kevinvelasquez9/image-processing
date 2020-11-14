@@ -39,14 +39,19 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
 		free(args);
 		return NULL;
 	}
-
-    uint32_t endCol = source->height - 1;
-	for (int i = 0; i < source->width; i++) {
-        for (int j = 0; j < source->height; j++) {
-            out->data[j * source->width + i] = source->data[(endCol - j) * source->width + i];
+    
+    uint32_t startCol = 0;
+    uint32_t endCol = (source->height - 1) * source->width;
+    
+    while (startCol < endCol) {
+        for (int i = 0; i < source->width; i++) {
+            out->data[startCol + i] = source->data[endCol + i];
+            out->data[endCol + i] = source->data[startCol+i];
         }
-    }
 
+        startCol += source->width;
+        endCol -= source->width;
+    }
 	free(args);
 
 	return out;
