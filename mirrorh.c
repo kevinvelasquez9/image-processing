@@ -40,9 +40,9 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
 
 	for (unsigned i = 0; i < source->height; i++) {
         uint32_t curRow = i * source->width;
-        uint32_t endRow = ((i + 1) * source->width) - 1;
-        for (unsigned j = 0; j < source->width/2; j++) {
-            out->data[curRow + j] = source->data[endRow- j];
+        uint32_t endRow = curRow + source->width - 1;
+        for (unsigned j = 0; j < source->width; j++) {
+            out->data[curRow + j] = source->data[endRow - j];
         }
 	}
 
