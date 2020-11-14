@@ -70,7 +70,6 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
                 source->data[(args->tiles * (i * source->width)) + (args->tiles * j)];
         }
     }
-
     for (unsigned int i = 0; i < source->height; i++) {
         for (unsigned int j = 0; j  < source->width; j++) {
             out->data[i * source->width + j] = intermediate->data[(i % tileHeight) * tileWidth + (j % tileWidth)];
