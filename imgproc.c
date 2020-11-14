@@ -21,6 +21,7 @@ void fetch_files(char** plugin_files, char* plugin_dir) {
     dir = opendir(plugin_dir);
     if (dir == NULL) {
         printf("Error opening %s", plugin_dir);
+        closedir(dir);
         return;
     }
     // Iterate through all files and push back those with ".so"
@@ -32,6 +33,7 @@ void fetch_files(char** plugin_files, char* plugin_dir) {
             plugin_files[index++] = file;
         }
     }
+    //closedir(dir);
 }
 
 void fetch_plugins(char* dir, Plugin** plugins, char** plugin_files, int *i) {
