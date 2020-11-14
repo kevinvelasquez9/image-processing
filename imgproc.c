@@ -34,13 +34,16 @@ void fetch_files(char** plugin_files, char* plugin_dir) {
     }
 }
 
-void fetch_plugins(Plugin** plugins, char** plugin_files, int *i) {
+void fetch_plugins(char* dir, Plugin** plugins, char** plugin_files, int *i) {
     int index = 0;
     // Iterate over the plugin files
     while (plugin_files[index] != NULL) {
-        char* handle = dlopen(plugin_files[index], RTLD_LAZY);
+        char* f = malloc(strlen(dir) + strlen(plugin_files[index]) + 2);
+        strcpy(f, dir);
+        strcat(f, "/");
+        strcat(f, plugin_files[index]);
+        char* handle = dlopen(f, RTLD_LAZY);
         (plugins)[index]->handle = handle;
-        printf(handle);
         // idk if dlsym() works here
         *(void **) (&(plugins[index])->get_plugin_name) = dlsym(handle, "get_plugin_name");
         *(void **) (&(plugins[index])->get_plugin_desc) = dlsym(handle, "get_plugin_desc");
@@ -53,10 +56,10 @@ void fetch_plugins(Plugin** plugins, char** plugin_files, int *i) {
             break;
         }
     }
-    for (int i = 0; i < index; i++) {
-        printf(plugins[index]->get_plugin_name);
+    for (int j = 0; j < index; j++) {
+        printf(plugins[j]->get_plugin_name());
         printf(": ");
-        printf(plugins[index]->get_plugin_desc);
+        printf(plugins[j]->get_plugin_desc());
         printf("\n");
     }
 
@@ -107,7 +110,6 @@ int main(int argc, char* argv[]) {
     }
 
     char* plugin_dir = fetch_dir();
-    printf(plugin_dir);
     int num_elements = 5;
 
     char command[100];
@@ -152,7 +154,6 @@ int main(int argc, char* argv[]) {
         dlclose(command);
 
     } else if (strcmp("list", argv[1]) == 0) {
-        printf("list called\n");
         char** plugin_files = (char**) calloc(num_elements, sizeof(char*));
         fetch_files(plugin_files, plugin_dir);
         // We make the array of plugins
@@ -161,7 +162,7 @@ int main(int argc, char* argv[]) {
             plugins[i] = calloc(1, sizeof(Plugin));
         }
         int index; 
-        fetch_plugins(plugins, plugin_files, &index);
+        fetch_plugins(plugin_dir, plugins, plugin_files, &index);
         for (int i = 0; i < index; i++)  {
             free(plugin_files[i]);
         }
