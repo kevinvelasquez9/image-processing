@@ -61,6 +61,7 @@ void fetch_plugins(char* dir, Plugin** plugins, char** plugin_files, int *i) {
         printf(": ");
         printf(plugins[j]->get_plugin_desc());
         printf("\n");
+        dlclose(plugins[j]->handle);
     }
 
     *i = index;
@@ -164,12 +165,15 @@ int main(int argc, char* argv[]) {
         }
         int index; 
         fetch_plugins(plugin_dir, plugins, plugin_files, &index);
-        for (int i = 0; i < index; i++)  {
-            free(plugin_files[i]);
-        }
+        //printf("%d\n", index);
+        //for (int i = 0; i < index; i++)  {
+        //    if (plugin_files[i] != NULL) {
+        //        free(plugin_files[i]);
+        //    }
+        //}
         free(plugin_files);
         for (int i = 0; i < num_elements; i++) {
-            dlclose((plugins)[index]->handle);
+            //dlclose((plugins)[index]->handle);
             free(plugins[i]);
         }
         free(plugins);
