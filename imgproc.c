@@ -148,7 +148,7 @@ int main(int argc, char* argv[]) {
             free(plugin);
             return -1;
         }
-        int numArgs = argc - 3;
+        int numArgs = argc - 5;
         void* arg_memory = plugin->parse_arguments(numArgs, argv);
         if (arg_memory == NULL) {
             printf("Error: Incorrect args passed to plugin\n");
