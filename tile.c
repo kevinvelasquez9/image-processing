@@ -70,9 +70,25 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
                 source->data[(args->tiles * (i * source->width)) + (args->tiles * j)];
         }
     }
-    for (unsigned int i = 0; i < source->height; i++) {
-        for (unsigned int j = 0; j  < source->width; j++) {
-            out->data[i * source->width + j] = intermediate->data[(i % tileHeight) * tileWidth + (j % tileWidth)];
+    int curHeight = tileHeight;
+    for (unsigned int i = 0; i < out->height; i++) {
+        if (excessHeight == 0) {
+            curHeight = tileHeight - 1;
+        }
+        int curWidth = tileWidth;
+        int widthHolder = excessWidth;
+        for (unsigned int j = 0; j  < out->width; j++) {
+            if (widthHolder == 0) {
+                curWidth = tileWidth - 1;
+            }
+            out->data[i * out->width + j] = intermediate->data[(i % curHeight) * curWidth + (j % curWidth)];
+            //out->data[i * source->width + j] = intermediate->data[(i % tileHeight) * tileWidth + (j % tileWidth)];
+            if (j % tileWidth == 0 && widthHolder != 0) {
+                widthHolder--;
+            }
+        }
+        if (i % tileHeight == 0 && excessHeight != 0) {
+            excessHeight--;
         }
     }
     

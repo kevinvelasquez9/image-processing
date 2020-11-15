@@ -34,21 +34,24 @@ void *parse_arguments(int num_args, char *args[]) {
 // Helper function to swap the blue and green color component values.
 static uint32_t expose_pixel(uint32_t pix, float expose) {
 	uint8_t r, g, b, a;
+    if (expose > 255.0f) {
+        expose = 255.0f;
+    }
 	img_unpack_pixel(pix, &r, &g, &b, &a);
-    uint32_t rx = r;
-    uint32_t bx = b;
-    uint32_t gx = g;
+    float rx = (float)r;
+    float bx = (float)b;
+    float gx = (float)g;
     rx *= expose;
     bx *= expose;
     gx *= expose;
-    if (rx > 255) {
-        rx = 255;
+    if (rx > 255.0f) {
+        rx = 255.0f;
     }
-    if (gx > 255) {
-        gx = 255;
+    if (gx > 255.0f) {
+        gx = 255.0f;
     }
-    if (bx > 255) {
-        bx = 255;
+    if (bx > 255.0f) {
+        bx = 255.0f;
     }
     r = rx;
     b = bx;

@@ -53,14 +53,14 @@ int plugin_iterator(DIR *dir, struct dirent* dirp, char *plugin_dir) {
         char command[100];  
         Plugin *p = (Plugin*)malloc(sizeof(Plugin));
         char* file = dirp->d_name;
-        if (strstr(file, ".so") != NULL) {
+        if (strncmp(file + strlen(file) - 3, ".so", 3) == 0) {
             strcpy(command, plugin_dir);
             strcat(command, "/");
             strcat(command, file);
             handle = dlopen(command, RTLD_LAZY);
             if (handle == NULL) {
                 free(p);
-                return -1;
+                continue;
             }
             fetch_plugin(p, handle);
             printf("%8s: %s\n", p->get_plugin_name(), p->get_plugin_desc());
@@ -120,11 +120,13 @@ int main(int argc, char* argv[]) {
 
             }
         } else {
+            printf("Error: Could not open directory\n");
             free(plugin);
             closedir(dir1);
             return -1;
         }
         if (command[0] == 0) {
+            printf("Error: File not read\n");
             free(plugin);
             return -1;
         }
