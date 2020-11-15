@@ -89,7 +89,6 @@ int main(int argc, char* argv[]) {
         printf("Error: Plugin directory not found\n");
         return -1;
     }
-    int num_elements = 5;
     
     /* Dynamically link to a single library */
     if (strcmp("exec", argv[1]) == 0) {
@@ -104,12 +103,14 @@ int main(int argc, char* argv[]) {
         if (strcmp("mirrorh", argv[2]) == 0) {
             if (argc < 5) {
                 printf("Error: Invald number of arguments\n");
+                free(plugin);
                 return -1;
             }
             strcat(command, "mirrorh.so");
         } else if (strcmp("mirrorv", argv[2]) == 0) {
             if (argc < 5) {
                 printf("Error: Invald number of arguments\n");
+                free(plugin);
                 return -1;
             }
             strcat(command, "mirrorv.so");
@@ -122,6 +123,7 @@ int main(int argc, char* argv[]) {
         } else if (strcmp("tile", argv[2]) == 0) {
             if (argc < 6) {
                 printf("Error: Invald number of arguments\n");
+                free(plugin);
                 return -1;
             }
             strcat(command, "tile.so");
@@ -131,34 +133,50 @@ int main(int argc, char* argv[]) {
                 printf("Error: Invald number of arguments\n");
                 return -1;
             }
+            if (atoi(argv[5]) < 0) {
+                free(plugin);
+                return -1;
+            }
             strcat(command, "expose.so");
             numArgs++;
         } else {
             printf("Error: Invalid or unknown image manipulation\n");
+            free(plugin);
             return -1;
         }
         handle = dlopen(command, RTLD_LAZY);
         if (handle == NULL) {
             printf("Error: dlopen() could not create an executable object from the input file\n");
+            free(plugin);
             return -1;
         }
         fetch_plugin(plugin, handle);
         if (access(argv[3], F_OK) == -1) {
             printf("Error: Input image doesn't exist\n");
+            free(plugin);
             return -1;
         }
         /* Performs plugin's image manipulations */
         struct Image *i = img_read_png(argv[3]);
         if (i == NULL) {
             printf("Error: File read as NULL");
+            free(plugin);
             return -1;
         }
         void* arg_memory = plugin->parse_arguments(numArgs, argv);
         if (arg_memory == NULL) {
             printf("Error: Incorrect args passed to plugin\n");
+            free(plugin);
             return -1;
         }
         struct Image *result = plugin->transform_image(i, arg_memory);
+        if (result == NULL) {
+            img_destroy(i);
+            img_destroy(result);
+            free(plugin);
+            dlclose(handle);
+            return -1;
+        }
         img_write_png(result, argv[4]);
         /* Deallocates memory/closes files */
         img_destroy(i);
