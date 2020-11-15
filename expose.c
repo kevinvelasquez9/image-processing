@@ -23,7 +23,7 @@ const char *get_plugin_desc(void) {
 }
 
 void *parse_arguments(int num_args, char *args[]) {
-	if (num_args != 1) {
+	if (num_args != 3) {
 		return NULL;
 	}
     struct Arguments *a = calloc(1, sizeof(struct Arguments));

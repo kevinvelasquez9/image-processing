@@ -22,7 +22,8 @@ int get_num_files(DIR *dir, struct dirent *dirp) {
     int i = 0;
     while ( ( dirp = readdir(dir) ) != NULL) {
         char* file = dirp->d_name;
-        if (strstr(file, ".so") != NULL) {
+        size_t lenstr = strlen(file);
+        if (strncmp(file + lenstr - 3, ".so", 3) == 0) {
             i++;
         }
     }
@@ -33,7 +34,6 @@ int get_num_files(DIR *dir, struct dirent *dirp) {
 
 /* Links functions from shared object file to a Plugin struct */
 void fetch_plugin(Plugin *plugin, char* handle) {
-    assert(plugin != NULL);
     plugin->handle = handle;
 
     *(void **) (&(plugin)->get_plugin_name) = dlsym(handle, "get_plugin_name");
@@ -59,13 +59,11 @@ int plugin_iterator(DIR *dir, struct dirent* dirp, char *plugin_dir) {
             strcat(command, file);
             handle = dlopen(command, RTLD_LAZY);
             if (handle == NULL) {
+                free(p);
                 return -1;
             }
             fetch_plugin(p, handle);
-            printf(p->get_plugin_name());
-            printf(": ");
-            printf(p->get_plugin_desc());
-            printf("\n");
+            printf("%8s: %s\n", p->get_plugin_name(), p->get_plugin_desc());
             dlclose(handle);
         }
         free(p);
@@ -74,9 +72,9 @@ int plugin_iterator(DIR *dir, struct dirent* dirp, char *plugin_dir) {
 }
 
 int main(int argc, char* argv[]) {
-    if (argc > 6) {
-        return -1;
-    }
+  //if (argc > 6) {
+  //    return -1;
+  //}
     /* Display possible command line arguments */
     if (argc == 1) {
         printf("Usage: imgproc <command> [<command args...>]\n");
@@ -93,57 +91,44 @@ int main(int argc, char* argv[]) {
     /* Dynamically link to a single library */
     if (strcmp("exec", argv[1]) == 0) {
         char *handle;
-        int numArgs = 0;
-        char command[100];
-        assert(argc >=5);
+        if (argc < 4) {
+            return -1;
+        }
         Plugin *plugin = (Plugin*)malloc(sizeof(Plugin));
         /* Concatenates string that leads to .so file */
-        strcpy(command, plugin_dir);
-        strcat(command, "/");
-        if (strcmp("mirrorh", argv[2]) == 0) {
-            if (argc < 5) {
-                printf("Error: Invald number of arguments\n");
-                free(plugin);
-                return -1;
+        DIR *dir1;
+        struct dirent *dirp1;
+        char command[100] = {0};
+        if ((dir1 = opendir(plugin_dir)) != NULL) {
+            while ((dirp1 = readdir(dir1)) != NULL) {
+                char* file = dirp1->d_name;
+                if (strncmp(file + strlen(file) - 3, ".so", 3) == 0) {
+                    size_t length = strlen(plugin_dir) + strlen(file) + 2;
+                    char handle1[length];
+                    strcpy(handle1, plugin_dir);
+                    strcat(handle1, "/");
+                    strcat(handle1, dirp1->d_name);
+                    char* handle2;
+                    handle2 = dlopen(handle1, RTLD_LAZY);
+                    fetch_plugin(plugin, handle2);
+                    if (strcmp(argv[2], plugin->get_plugin_name()) == 0) {
+                        strcpy(command, handle1);
+                        closedir(dir1);
+                        break;
+                    }
+                }
+
             }
-            strcat(command, "mirrorh.so");
-        } else if (strcmp("mirrorv", argv[2]) == 0) {
-            if (argc < 5) {
-                printf("Error: Invald number of arguments\n");
-                free(plugin);
-                return -1;
-            }
-            strcat(command, "mirrorv.so");
-        } else if (strcmp("swapbg", argv[2]) == 0) {
-            if (argc < 5) {
-                printf("Error: Invald number of arguments\n");
-                return -1;
-            }
-            strcat(command, "swapbg.so");
-        } else if (strcmp("tile", argv[2]) == 0) {
-            if (argc < 6) {
-                printf("Error: Invald number of arguments\n");
-                free(plugin);
-                return -1;
-            }
-            strcat(command, "tile.so");
-            numArgs++;
-        } else if (strcmp("expose", argv[2]) == 0) {
-            if (argc < 6) {
-                printf("Error: Invald number of arguments\n");
-                return -1;
-            }
-            if (atoi(argv[5]) < 0) {
-                free(plugin);
-                return -1;
-            }
-            strcat(command, "expose.so");
-            numArgs++;
         } else {
-            printf("Error: Invalid or unknown image manipulation\n");
+            free(plugin);
+            closedir(dir1);
+            return -1;
+        }
+        if (command[0] == 0) {
             free(plugin);
             return -1;
         }
+       
         handle = dlopen(command, RTLD_LAZY);
         if (handle == NULL) {
             printf("Error: dlopen() could not create an executable object from the input file\n");
@@ -163,6 +148,7 @@ int main(int argc, char* argv[]) {
             free(plugin);
             return -1;
         }
+        int numArgs = argc - 3;
         void* arg_memory = plugin->parse_arguments(numArgs, argv);
         if (arg_memory == NULL) {
             printf("Error: Incorrect args passed to plugin\n");
@@ -192,6 +178,7 @@ int main(int argc, char* argv[]) {
     } else if (strcmp("list", argv[1]) == 0) {
         DIR* dir;
         struct dirent* dirp;
+        dirp = NULL;
         // Return if we cannot read from directory
         dir = opendir(plugin_dir);
         if (dir == NULL) {
@@ -200,12 +187,15 @@ int main(int argc, char* argv[]) {
             return -1;
         }
         int numFiles = get_num_files(dir, dirp);
-        printf("Error: Loaded %d plugin(s)\n", numFiles);
-        int iteratorSuccess = plugin_iterator(dir, dirp, plugin_dir);
+        printf("Loaded %d plugin(s)\n", numFiles);
+        plugin_iterator(dir, dirp, plugin_dir);
+        /*
         if (iteratorSuccess == -1) {
             printf("Error: dlopen() could not create an executable object from the input file\n");
-            return iteratorSuccess;
+            closedir(dir);
+            return -1;
         }
+        */
         rewinddir(dir);
         closedir(dir);
     } else {
