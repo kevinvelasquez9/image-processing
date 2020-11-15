@@ -50,13 +50,39 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
 		return NULL;
 	}
 
-    int tileWidth = source->width/args->tiles;
-    int tileHeight = source->height/args->tiles;
 
-    int excessWidth = source->width % args->tiles;
-    int excessHeight = source->height % args->tiles;
+    uint32_t tileWidth = source->width/args->tiles;
+    uint32_t tileHeight = source->height/args->tiles;
+
+    uint32_t excessWidth = source->width % args->tiles;
+    uint32_t excessHeight = source->height % args->tiles;
+
+    uint32_t total_pixels = source->width * source->height;
+
+    for (unsigned i = 0; i < total_pixels; i++) {
+        uint32_t curCol = i % source->width;
+        uint32_t curRow = i / source->width;
+        
+        uint32_t tileCol;
+        uint32_t tileRow;
+
+        if (curCol < (1 + tileWidth) * excessWidth) {
+            tileCol = (curCol % (1 + tileWidth)) * args->tiles;
+        } else {
+            tileCol = ((curCol - (1 + tileWidth) * excessWidth) % tileWidth) *args->tiles;
+        }
+
+        if (curRow < (1 + tileHeight) * excessHeight) {
+            tileRow = (curRow % (1 + tileHeight)) * args->tiles;
+        } else {
+            tileRow = ((curRow - (1 + tileHeight) * excessHeight) % tileHeight) *args->tiles;
+        }
+
+        uint32_t pix = tileCol + tileRow * source->width;
+        out->data[i] = source->data[pix];
+    }
     
-    if (excessWidth != 0) {
+    /* if (excessWidth != 0) {
         tileWidth++;
     }
     if (excessHeight != 0) {
@@ -70,30 +96,15 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
                 source->data[(args->tiles * (i * source->width)) + (args->tiles * j)];
         }
     }
-    int curHeight = tileHeight;
-    for (unsigned int i = 0; i < out->height; i++) {
-        if (excessHeight == 0) {
-            curHeight = tileHeight - 1;
-        }
-        int curWidth = tileWidth;
-        int widthHolder = excessWidth;
-        for (unsigned int j = 0; j  < out->width; j++) {
-            if (widthHolder == 0) {
-                curWidth = tileWidth - 1;
-            }
-            out->data[i * out->width + j] = intermediate->data[(i % curHeight) * curWidth + (j % curWidth)];
-            //out->data[i * source->width + j] = intermediate->data[(i % tileHeight) * tileWidth + (j % tileWidth)];
-            if (j % tileWidth == 0 && widthHolder != 0) {
-                widthHolder--;
-            }
-        }
-        if (i % tileHeight == 0 && excessHeight != 0) {
-            excessHeight--;
-        }
-    }
-    
 
-    img_destroy(intermediate);
+
+    for (unsigned int i = 0; i < out->height; i++) {
+        for (unsigned int j = 0; j  < out->width; j++) {
+            out->data[i * source->width + j] = intermediate->data[(i % tileHeight) * tileWidth + (j % tileWidth)];
+        }
+
+    } */
+    
 	free(args);
 
 	return out;

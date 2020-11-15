@@ -70,7 +70,7 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
 		return NULL;
 	}
 
-    if (args->expose <= 0.0f) {
+    if (args->expose < 0.0f) {
         free(args);
         return NULL;
     }
