@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "image_plugin.h"
+#include <stdio.h>
 
 struct Arguments {
 	// This plugin doesn't accept any command line arguments;
@@ -40,6 +41,22 @@ void *parse_arguments(int num_args, char *args[]) {
 }
 
 
+void *do_tile(struct Image *source, struct Image *out, 
+    unsigned startX, unsigned endX, unsigned startY, 
+    unsigned endY, int tiles) {
+
+    int zeroY = 0;
+    for (int y = startY; y < endY; y++) {
+        int zeroX = 0;
+        for (int x = startX; x < endX; x++) {
+            out->data[y * source->width + x] = source->data[(tiles * (zeroY * source->width)) + (tiles * zeroX)];
+            zeroX++;
+        }
+        zeroY++;
+    }
+}
+
+
 struct Image *transform_image(struct Image *source, void *arg_data) {
 	struct Arguments *args = arg_data;
     
@@ -57,9 +74,44 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
     uint32_t excessWidth = source->width % args->tiles;
     uint32_t excessHeight = source->height % args->tiles;
 
-    uint32_t total_pixels = source->width * source->height;
+    if (excessWidth !=0 ) {
+        tileWidth++;
+    } 
+    if (excessHeight !=0) {
+        tileHeight++;
+    }
 
-    for (unsigned i = 0; i < total_pixels; i++) {
+    uint32_t total_pixels = source->width * source->height;
+    uint32_t screwyou;
+
+    uint32_t arraySize = args->tiles + 1;
+    uint32_t *xArray = (uint32_t*)calloc(arraySize, sizeof(uint32_t) * arraySize);
+    uint32_t *yArray = (uint32_t*)calloc(arraySize, sizeof(uint32_t) * arraySize);
+
+    for (int i = 0; i < arraySize; i++) {
+        if (i > excessWidth && excessWidth != 0) {
+            xArray[i] = (i * tileWidth) - (i - excessWidth);
+            printf("x: %d", xArray[i]);
+        } else {
+            xArray[i] = i * tileWidth;
+            printf("x: %d ", xArray[i]);
+        }
+        if (i > excessHeight && excessHeight != 0) {
+            yArray[i] = (i * tileHeight) - (i - excessHeight);
+            printf("y: %d\n", yArray[i]);
+        } else {
+            yArray[i] = i * tileHeight;
+            printf("y: %d\n", yArray[i]);
+        }
+    }
+
+    for (int y = 0; y < arraySize - 1; y++) {
+        for (int x = 0; x < arraySize - 1; x++) {
+            do_tile(source, out, xArray[x], xArray[x+1], yArray[y], yArray[y+1], args->tiles);
+        }
+    }
+
+  /*  for (unsigned i = 0; i < total_pixels; i++) {
         uint32_t curCol = i % source->width;
         uint32_t curRow = i / source->width;
         
@@ -80,7 +132,7 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
 
         uint32_t pix = tileCol + tileRow * source->width;
         out->data[i] = source->data[pix];
-    }
+    } */
     
     /* if (excessWidth != 0) {
         tileWidth++;
@@ -104,6 +156,9 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
         }
 
     } */
+
+    free(xArray);
+    free(yArray);
     
 	free(args);
 
