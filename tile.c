@@ -82,26 +82,22 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
     }
 
     uint32_t total_pixels = source->width * source->height;
-    uint32_t screwyou;
 
     uint32_t arraySize = args->tiles + 1;
     uint32_t *xArray = (uint32_t*)calloc(arraySize, sizeof(uint32_t) * arraySize);
     uint32_t *yArray = (uint32_t*)calloc(arraySize, sizeof(uint32_t) * arraySize);
 
+    /* Gets ranges of tile widths/heights and puts them in arrays */
     for (int i = 0; i < arraySize; i++) {
         if (i > excessWidth && excessWidth != 0) {
             xArray[i] = (i * tileWidth) - (i - excessWidth);
-            printf("x: %d", xArray[i]);
         } else {
             xArray[i] = i * tileWidth;
-            printf("x: %d ", xArray[i]);
         }
         if (i > excessHeight && excessHeight != 0) {
             yArray[i] = (i * tileHeight) - (i - excessHeight);
-            printf("y: %d\n", yArray[i]);
         } else {
             yArray[i] = i * tileHeight;
-            printf("y: %d\n", yArray[i]);
         }
     }
 
@@ -110,53 +106,6 @@ struct Image *transform_image(struct Image *source, void *arg_data) {
             do_tile(source, out, xArray[x], xArray[x+1], yArray[y], yArray[y+1], args->tiles);
         }
     }
-
-  /*  for (unsigned i = 0; i < total_pixels; i++) {
-        uint32_t curCol = i % source->width;
-        uint32_t curRow = i / source->width;
-        
-        uint32_t tileCol;
-        uint32_t tileRow;
-
-        if (curCol < (1 + tileWidth) * excessWidth) {
-            tileCol = (curCol % (1 + tileWidth)) * args->tiles;
-        } else {
-            tileCol = ((curCol - (1 + tileWidth) * excessWidth) % tileWidth) *args->tiles;
-        }
-
-        if (curRow < (1 + tileHeight) * excessHeight) {
-            tileRow = (curRow % (1 + tileHeight)) * args->tiles;
-        } else {
-            tileRow = ((curRow - (1 + tileHeight) * excessHeight) % tileHeight) *args->tiles;
-        }
-
-        uint32_t pix = tileCol + tileRow * source->width;
-        out->data[i] = source->data[pix];
-    } */
-    
-    /* if (excessWidth != 0) {
-        tileWidth++;
-    }
-    if (excessHeight != 0) {
-        tileHeight++;
-    }
-    struct Image *intermediate = img_create(tileWidth, tileHeight);
-
-    for (int i = 0; i < tileHeight; i++) {
-        for (int j = 0; j < tileWidth; j++) {
-            intermediate->data[i * tileWidth + j] = 
-                source->data[(args->tiles * (i * source->width)) + (args->tiles * j)];
-        }
-    }
-
-
-    for (unsigned int i = 0; i < out->height; i++) {
-        for (unsigned int j = 0; j  < out->width; j++) {
-            out->data[i * source->width + j] = intermediate->data[(i % tileHeight) * tileWidth + (j % tileWidth)];
-        }
-
-    } */
-
     free(xArray);
     free(yArray);
     
